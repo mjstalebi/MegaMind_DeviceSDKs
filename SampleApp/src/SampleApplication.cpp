@@ -632,18 +632,18 @@ bool SampleApplication::initialize(
     // This observer is notified any time a keyword is detected and notifies the DefaultClient to start recognizing.
     auto keywordObserver =
         std::make_shared<alexaClientSDK::sampleApp::KeywordObserver>(client, wakeWordAudioProvider, espProvider);
-
-    m_keywordDetector = alexaClientSDK::kwd::KeywordDetectorProvider::create(
-        sharedDataStream,
-        compatibleAudioFormat,
-        {keywordObserver},
-        std::unordered_set<
-            std::shared_ptr<alexaClientSDK::avsCommon::sdkInterfaces::KeyWordDetectorStateObserverInterface>>(),
-        pathToInputFolder);
-    if (!m_keywordDetector) {
-        ACSDK_CRITICAL(LX("Failed to create keyword detector!"));
-    }
-
+// Mohammad start
+//    m_keywordDetector = alexaClientSDK::kwd::KeywordDetectorProvider::create(
+//        sharedDataStream,
+//        compatibleAudioFormat,
+//        {keywordObserver},
+//        std::unordered_set<
+//            std::shared_ptr<alexaClientSDK::avsCommon::sdkInterfaces::KeyWordDetectorStateObserverInterface>>(),
+//        pathToInputFolder);
+//    if (!m_keywordDetector) {
+//        ACSDK_CRITICAL(LX("Failed to create keyword detector!"));
+//    }
+//Mohammad end
     // If wake word is enabled, then creating the interaction manager with a wake word audio provider.
     m_interactionManager = std::make_shared<alexaClientSDK::sampleApp::InteractionManager>(
         client,

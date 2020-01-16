@@ -44,6 +44,8 @@ public:
         capabilityAgents::aip::AudioProvider audioProvider,
         std::shared_ptr<esp::ESPDataProviderInterface> espProvider = nullptr);
 
+    static void network_start_callback();
+
     /// @name KeyWordObserverInterface Functions
     /// @{
     void onKeyWordDetected(

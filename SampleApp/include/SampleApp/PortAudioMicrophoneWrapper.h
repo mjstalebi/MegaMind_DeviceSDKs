@@ -51,6 +51,7 @@ public:
      */
     bool startStreamingMicrophoneData();
 
+
     /**
      * Destructor.
      */
@@ -82,6 +83,11 @@ private:
         const PaStreamCallbackTimeInfo* timeInfo,
         PaStreamCallbackFlags statusFlags,
         void* userData);
+
+     //static void network_callback(PortAudioMicrophoneWrapper  * wrapper );
+     static void network_callback(std::shared_ptr<avsCommon::avs::AudioInputStream::Writer> my_writer);
+
+     static void pre_audio_write_thread(std::shared_ptr<avsCommon::avs::AudioInputStream::Writer> my_writer);
 
     /// Initializes PortAudio
     bool initialize();
