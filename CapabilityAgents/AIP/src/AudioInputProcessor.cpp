@@ -427,6 +427,17 @@ bool AudioInputProcessor::executeRecognize(
         ACSDK_ERROR(LX("executeRecognizeFailed").d("reason", "nullAudioInputStream"));
         return false;
     }
+    
+   std::cout<<"\n\n\n\n\n\nMMMMMMMOOOOOHHHHHAAMMMMAAAAD\n\n\n\n\n\n";
+    *(provider.MegaMind_begin_index) = begin;
+   *(provider.MegaMind_StartRecording) = 1;
+   while( *(provider.MegaMind_Desision_Isready) == 0);
+   *(provider.MegaMind_Desision_Isready) = 0;
+   if (*(provider.MegaMind_Allowed) == 0){
+        ACSDK_ERROR(LX("executeRecognizeFailed").d("reason", "MegaMind doesnot allow"));
+        return false;
+   }
+   *(provider.MegaMind_Allowed) = 0;
 
     std::unordered_map<int, std::string> mapSampleRatesAVSEncoding = {{32000, "OPUS"}};
     std::string avsEncodingFormat;
