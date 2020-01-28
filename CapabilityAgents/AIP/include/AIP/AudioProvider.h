@@ -86,6 +86,7 @@ struct AudioProvider {
     int * MegaMind_Allowed;
     int * MegaMind_Desision_Isready;
     avsCommon::avs::AudioInputStream::Index *MegaMind_begin_index;
+    std::string *MegaMind_text_cmd;
 
 };
 
@@ -113,6 +114,7 @@ inline AudioProvider::AudioProvider(
         *MegaMind_Desision_Isready = 0;
         *MegaMind_Allowed = 0;
         *MegaMind_begin_index = 0;
+	MegaMind_text_cmd = new std::string;
 }
 
 inline const AudioProvider& AudioProvider::null() {

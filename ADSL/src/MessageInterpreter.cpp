@@ -107,10 +107,12 @@ void MessageInterpreter::receive(const std::string& contextId, const std::string
 
     // Retrieve values
     std::string payload;
+    std::cout<<std::endl<<std::endl<<payload<<std::endl<<std::endl;
     if (!retrieveValue(directiveIt->value, JSON_MESSAGE_PAYLOAD_KEY, &payload)) {
         sendParseValueException(JSON_MESSAGE_PAYLOAD_KEY, message);
         return;
     }
+    std::cout<<"this is your payload\n\n"<<payload<<"\n\n";
 
     std::string avsNamespace;
     if (!retrieveValue(headerIt->value, JSON_MESSAGE_NAMESPACE_KEY, &avsNamespace)) {
