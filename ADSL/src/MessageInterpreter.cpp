@@ -23,6 +23,23 @@
 
 #include <AVSCommon/Utils/Logger/Logger.h>
 
+//MegaMind 
+#include "sock.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include "sock.h"
+#include <iostream>
+#include <string>
+#include <algorithm>
+//MegeMind end
 namespace alexaClientSDK {
 namespace adsl {
 
@@ -82,7 +99,46 @@ MessageInterpreter::MessageInterpreter(
         m_directiveSequencer{directiveSequencer},
         m_attachmentManager{attachmentManager} {
 }
+//MeagMind Start
+void report(const char* msg, int terminate) {
+  perror(msg);
+  if (terminate) exit(-1); /* failure */
+}
 
+void send_to_MegaMind_engine(std::string cmd){
+   int sockfd = socket(AF_INET,      /* versus AF_LOCAL */
+                       SOCK_STREAM,  /* reliable, bidirectional */
+                       0);           /* system picks protocol (TCP) */
+   if (sockfd < 0) report("socket", 1); /* terminate */
+ 
+   /* get the address of the host */
+   struct hostent* hptr = gethostbyname(Host); /* localhost: 127.0.0.1 */
+   if (!hptr) report("gethostbyname", 1); /* is hptr NULL? */
+   if (hptr->h_addrtype != AF_INET)       /* versus AF_LOCAL */
+     report("bad address family", 1);
+ 
+   /* connect to the server: configure server's address 1st */
+   struct sockaddr_in saddr;
+   memset(&saddr, 0, sizeof(saddr));
+   saddr.sin_family = AF_INET;
+   saddr.sin_addr.s_addr =
+      ((struct in_addr*) hptr->h_addr_list[0])->s_addr;
+   saddr.sin_port = htons(PortNumber_alexa_response); /* port number in big-endian */
+ 
+   if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0)
+     report("connect", 1);
+ 
+   /* Write some stuff and read the echoes. */
+   if (write(sockfd, cmd.c_str(), strlen(cmd.c_str())+1) > 0) {
+     /* get confirmation echoed from server and print */
+     //cout<<"successful write\n";
+   }
+   //puts("Client done, about to exit...");
+   close(sockfd); /* close the connection */
+
+	return;
+}
+//MegaMind end
 void MessageInterpreter::receive(const std::string& contextId, const std::string& message) {
     Document document;
 
@@ -107,13 +163,17 @@ void MessageInterpreter::receive(const std::string& contextId, const std::string
 
     // Retrieve values
     std::string payload;
-    std::cout<<std::endl<<std::endl<<payload<<std::endl<<std::endl;
+
     if (!retrieveValue(directiveIt->value, JSON_MESSAGE_PAYLOAD_KEY, &payload)) {
         sendParseValueException(JSON_MESSAGE_PAYLOAD_KEY, message);
         return;
     }
+//MegaMind Start
     std::cout<<"this is your payload\n\n"<<payload<<"\n\n";
-
+    if (payload.find("caption") != std::string::npos){
+        send_to_MegaMind_engine(payload);
+    }
+//MegaMind end
     std::string avsNamespace;
     if (!retrieveValue(headerIt->value, JSON_MESSAGE_NAMESPACE_KEY, &avsNamespace)) {
         sendParseValueException(JSON_MESSAGE_NAMESPACE_KEY, message);
