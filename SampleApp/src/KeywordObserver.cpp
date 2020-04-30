@@ -44,8 +44,10 @@ namespace alexaClientSDK {
 namespace sampleApp {
 
 capabilityAgents::aip::AudioProvider * static_audioProvider = NULL;
+std::shared_ptr<defaultClient::DefaultClient>  static_client = NULL;
 void notify_keyword_detection_over_network(avsCommon::avs::AudioInputStream::Index end_index);
 void send_audio_to_SDK2();
+void send_session_start_notice();
 void wait_for_MegaMind_engine_response(int * allowed, std::string ** text_cmd){
    int option = 1;
    int fd = socket(AF_INET,     /* network versus AF_LOCAL */
@@ -64,7 +66,7 @@ void wait_for_MegaMind_engine_response(int * allowed, std::string ** text_cmd){
    /* listen to the socket */
    if (listen(fd, MaxConnects) < 0) /* listen for clients, up to MaxConnects */
    report("listen", 1); /* terminate */
-      fprintf(stderr, "Listening on port %i for clients...\n", PortNumber_stop);
+      fprintf(stderr, "Listening on port %i for clients...\n", PortNumber_MegaMindEngine);
    int client_fd;
    struct sockaddr_in caddr; /* client address */
    int len = sizeof(caddr);  /* address length could change */
@@ -100,6 +102,8 @@ void wait_for_start(){
       while(1){
          std::cout<<"wait_for_start: before going to busy wait stage\n";
          while(1){
+		//std::cout<<"..,,..\n";
+		//sleep(1);
 		if(static_audioProvider == NULL){
 		   std::cout<<"static_audioProvider is NULL[1]\n";
 		   break;
@@ -126,6 +130,58 @@ void wait_for_start(){
          std::cout<<"should start recording\n"; 
       }
 }
+void wait_for_text_start_req()
+{
+	
+   int option = 1;
+   int fd = socket(AF_INET,     /* network versus AF_LOCAL */
+                   SOCK_STREAM, /* reliable, bidirectional: TCP */
+                   0);          /* system picks underlying protocol */
+   if (fd < 0) report("socket", 1); /* terminate */
+   setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+   /* bind the server's local address in memory */
+   struct sockaddr_in saddr;
+   memset(&saddr, 0, sizeof(saddr));          /* clear the bytes */
+   saddr.sin_family = AF_INET;                /* versus AF_LOCAL */
+   saddr.sin_addr.s_addr = htonl(INADDR_ANY); /* host-to-network endian */
+   saddr.sin_port = htons(PortNumber_text_start_req);        /* for listening */
+   if (bind(fd, (struct sockaddr *) &saddr, sizeof(saddr)) < 0)
+    report("bind", 1); /* terminate */
+   /* listen to the socket */
+   if (listen(fd, MaxConnects) < 0) /* listen for clients, up to MaxConnects */
+   report("listen", 1); /* terminate */
+      fprintf(stderr, "Listening on port %i for clients...\n", PortNumber_text_start_req);
+   int client_fd;
+   while(1){
+	   struct sockaddr_in caddr; /* client address */
+	   int len = sizeof(caddr);  /* address length could change */
+	  
+	   client_fd = accept(fd, (struct sockaddr*) &caddr,(socklen_t*) &len);  /* accept blocks */
+	   if (client_fd < 0) {
+	     report("accept", 0); /* don't terminated, though there's a problem */
+	   }
+	   setsockopt(client_fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+	   char buffer[1024];
+	   std::string * cmd = NULL; 
+	   int count = read(client_fd, buffer, sizeof(buffer));
+	   if (count > 0) {
+		cmd = new std::string(buffer, count );
+		std::cout<<count<<"bytes read;  cmd= "<<(*cmd)<<"\n";
+	   }else{
+	       std::cout<<" count is negative\n";
+	       continue;
+	   }
+	   send_session_start_notice();
+           static_client->notifyOfTapToTalk(*static_audioProvider, avsCommon::avs::AudioInputStream::Index(100) );
+	   int trueVar = 1;
+	   setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&trueVar,sizeof(int));
+	   setsockopt(client_fd,SOL_SOCKET,SO_REUSEADDR,&trueVar,sizeof(int));
+
+	   close(client_fd); /* break connection */
+   }
+   close(fd);
+   close(client_fd); /* break connection */
+}
 KeywordObserver::KeywordObserver(
     std::shared_ptr<defaultClient::DefaultClient> client,
     capabilityAgents::aip::AudioProvider audioProvider,
@@ -134,9 +190,12 @@ KeywordObserver::KeywordObserver(
         m_audioProvider{audioProvider},
         m_espProvider{espProvider} {
  	static_audioProvider = &m_audioProvider;
+	static_client = m_client;
         std::cout<<"before run the wait for start thread\n";
         std::thread th2(wait_for_start);
         th2.detach();
+	std::thread th3(wait_for_text_start_req);
+        th3.detach();
 
         
 }
@@ -234,6 +293,41 @@ void notify_keyword_detection_over_network(avsCommon::avs::AudioInputStream::Ind
     close(sockfd); /* close the connection */
 
 }
+void send_session_start_notice(){
+
+    int sockfd = socket(AF_INET,      /* versus AF_LOCAL */
+			SOCK_STREAM,  /* reliable, bidirectional */
+			0);           /* system picks protocol (TCP) */
+    if (sockfd < 0) report("socket", 1); /* terminate */
+  
+    /* get the address of the host */
+    struct hostent* hptr = gethostbyname(Host); /* localhost: 127.0.0.1 */
+    if (!hptr) report("gethostbyname", 1); /* is hptr NULL? */
+    if (hptr->h_addrtype != AF_INET)       /* versus AF_LOCAL */
+      report("bad address family", 1);
+  
+    /* connect to the server: configure server's address 1st */
+    struct sockaddr_in saddr;
+    memset(&saddr, 0, sizeof(saddr));
+    saddr.sin_family = AF_INET;
+    saddr.sin_addr.s_addr =
+       ((struct in_addr*) hptr->h_addr_list[0])->s_addr;
+    saddr.sin_port = htons(PortNumber_start_session_notice); /* port number in big-endian */
+  
+    if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0)
+      report("connect", 1);
+  
+    /* Write some stuff and read the echoes. */
+    puts("Connect to server, about to write some stuff...");
+    char buff[64] = "Start";
+   
+    if (write(sockfd, buff, sizeof(buff)) < 0) {
+           std::cout<<"error: could not send the packets\n";
+    }
+    close(sockfd); /* close the connection */
+
+
+}
 void send_audio_to_SDK2(){
 
     int sockfd = socket(AF_INET,      /* versus AF_LOCAL */
@@ -314,7 +408,9 @@ void KeywordObserver::onKeyWordDetected(
 //Mohammad
             /* fd for the socket */
 	    std::cout<< " HEYYYY: \t"<<beginIndex<<"\t\t" <<endIndex;
+	    send_session_start_notice();
             m_client->notifyOfTapToTalk(m_audioProvider, endIndex);
+
         }
     } else if (
         endIndex != avsCommon::sdkInterfaces::KeyWordObserverInterface::UNSPECIFIED_INDEX &&

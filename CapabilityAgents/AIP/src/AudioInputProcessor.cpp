@@ -471,7 +471,7 @@ if(config_use_text == true){
          // Assemble the event payload.
     std::ostringstream payload;
     std::string usr_str = text_cmd;
-    usr_str.erase(usr_str.find('\0'));
+    //usr_str.erase(usr_str.find('\0'));
     // clang-format off
     payload << R"({)"
                    R"("textMessage":")" << usr_str << R"(")";

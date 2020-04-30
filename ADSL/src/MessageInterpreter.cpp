@@ -126,7 +126,7 @@ void send_to_MegaMind_engine(std::string cmd){
    saddr.sin_port = htons(PortNumber_alexa_response); /* port number in big-endian */
  
    if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0)
-     report("connect", 1);
+     report("connect (sending paylod) ", 1);
  
    /* Write some stuff and read the echoes. */
    if (write(sockfd, cmd.c_str(), strlen(cmd.c_str())+1) > 0) {
