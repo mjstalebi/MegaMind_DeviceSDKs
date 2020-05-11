@@ -27,9 +27,45 @@
 
 #include "AIP/AudioInputProcessor.h"
 //MegaMind
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#include <thread>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
 #include <AVSCommon/AVS/EventBuilder.h>
 bool config_use_text =true;
 //MegaMind end
+
+void wait_on_pipe(std::string  name){
+        std::string path = "/tmp/MegaMind/" + name;
+        const char * myfifo = path.c_str();
+        char buff[256];
+        int fd = open(myfifo, O_RDONLY);
+        read(fd , buff , 1);
+	std::cout<<"wait on pipe: "<<name<< " "<<buff<<"\n";
+        close(fd);
+
+}
+void write_to_pipe(std::string  name, std::string  datastr){
+        std::string path = "/tmp/MegaMind/" + name;
+        const char * myfifo = path.c_str();
+        const char * data = datastr.c_str();
+        int fd = open(myfifo, O_WRONLY);
+        write(fd , data , strlen(data) +1 );
+        close(fd);
+
+}
 
 namespace alexaClientSDK {
 namespace capabilityAgents {
@@ -442,18 +478,20 @@ if(config_use_text == false){
    std::string text_cmd = "What time is it?"; 
    std::cout<<"\n\n\n\n\n\nMMMMMMMOOOOOHHHHHAAMMMMAAAAD\n\n\n\n\n\n";
     *(provider.MegaMind_begin_index) = begin;
-   *(provider.MegaMind_StartRecording) = 1;
+   //*(provider.MegaMind_StartRecording) = 1;
+   write_to_pipe("listen_event","s");
    std::cout<<"executeRecognize : before while wait\n";
-   while( *(provider.MegaMind_Desision_Isready) == 0);
+   wait_on_pipe("desision_is_ready");
+   //while( *(provider.MegaMind_Desision_Isready) == 0);
    std::cout<<"executeRecognize : after while wait\n";
    text_cmd = *(provider.MegaMind_text_cmd);
    std::cout<<"MMM\t"<<text_cmd;
-   *(provider.MegaMind_Desision_Isready) = 0;
-   if (*(provider.MegaMind_Allowed) == 0){
-        ACSDK_ERROR(LX("executeRecognizeFailed").d("reason", "MegaMind doesnot allow"));
-        return false;
-   }
-   *(provider.MegaMind_Allowed) = 0;
+  // *(provider.MegaMind_Desision_Isready) = 0;
+  // if (*(provider.MegaMind_Allowed) == 0){
+  //      ACSDK_ERROR(LX("executeRecognizeFailed").d("reason", "MegaMind doesnot allow"));
+  //      return false;
+  // }
+  // *(provider.MegaMind_Allowed) = 0;
 //MegaMind Start
 if(config_use_text == true){
 	std::cout<<"Oh, yea! it is text format!\n";

@@ -22,8 +22,8 @@
 #include <AVSCommon/Utils/Metrics.h>
 
 #include <AVSCommon/Utils/Logger/Logger.h>
-
-//MegaMind 
+//MegaMind add
+//Mohammad add
 #include "sock.h"
 #include <string.h>
 #include <stdio.h>
@@ -31,15 +31,18 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/tcp.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
-#include "sock.h"
-#include <iostream>
-#include <string>
-#include <algorithm>
-//MegeMind end
+#include <thread>
+#include <unistd.h>
+
+//#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+//MegaMind end
 namespace alexaClientSDK {
 namespace adsl {
 
@@ -105,38 +108,13 @@ void report(const char* msg, int terminate) {
   if (terminate) exit(-1); /* failure */
 }
 
-void send_to_MegaMind_engine(std::string cmd){
-   int sockfd = socket(AF_INET,      /* versus AF_LOCAL */
-                       SOCK_STREAM,  /* reliable, bidirectional */
-                       0);           /* system picks protocol (TCP) */
-   if (sockfd < 0) report("socket", 1); /* terminate */
- 
-   /* get the address of the host */
-   struct hostent* hptr = gethostbyname(Host); /* localhost: 127.0.0.1 */
-   if (!hptr) report("gethostbyname", 1); /* is hptr NULL? */
-   if (hptr->h_addrtype != AF_INET)       /* versus AF_LOCAL */
-     report("bad address family", 1);
- 
-   /* connect to the server: configure server's address 1st */
-   struct sockaddr_in saddr;
-   memset(&saddr, 0, sizeof(saddr));
-   saddr.sin_family = AF_INET;
-   saddr.sin_addr.s_addr =
-      ((struct in_addr*) hptr->h_addr_list[0])->s_addr;
-   saddr.sin_port = htons(PortNumber_alexa_response); /* port number in big-endian */
- 
-   if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0)
-     report("connect (sending paylod) ", 1);
- 
-   /* Write some stuff and read the echoes. */
-   if (write(sockfd, cmd.c_str(), strlen(cmd.c_str())+1) > 0) {
-     /* get confirmation echoed from server and print */
-     //cout<<"successful write\n";
-   }
-   //puts("Client done, about to exit...");
-   close(sockfd); /* close the connection */
-
-	return;
+void send_to_MegaMind_engine(std::string cmd){	
+	std::string path = "/tmp/MegaMind/payload";
+        const char * myfifo = path.c_str();
+        const char * data = cmd.c_str();
+        int fd = open(myfifo, O_WRONLY);
+        write(fd , data , strlen(data) +1 );
+        close(fd);
 }
 //MegaMind end
 void MessageInterpreter::receive(const std::string& contextId, const std::string& message) {
