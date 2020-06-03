@@ -117,6 +117,7 @@ void send_to_MegaMind_engine(std::string cmd){
         close(fd);
 }
 //MegaMind end
+bool there_is_card = false;
 void MessageInterpreter::receive(const std::string& contextId, const std::string& message) {
     Document document;
 
@@ -149,7 +150,18 @@ void MessageInterpreter::receive(const std::string& contextId, const std::string
 //MegaMind Start
     std::cout<<"this is your payload\n\n"<<payload<<"\n\n";
     if (payload.find("caption") != std::string::npos){
-        send_to_MegaMind_engine(payload);
+	if( payload.find("mega card") == std::string::npos){
+        	send_to_MegaMind_engine(payload);
+	}else{
+		there_is_card = true;
+	}
+	
+    }
+    if( there_is_card == true){
+	if(payload.find("textField") != std::string::npos ){
+		send_to_MegaMind_engine(payload);
+		there_is_card = false;
+	}
     }
 //MegaMind end
     std::string avsNamespace;
